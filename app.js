@@ -56,6 +56,39 @@ if (!(APP_SECRET && VALIDATION_TOKEN && PAGE_ACCESS_TOKEN && SERVER_URL)) {
   process.exit(1);
 }
 
+var products = {'food1': { title: "Arepa",
+                        subtitle: "Arepa santandereana con queso",
+                        price: 2000, 
+                        item_url: "https://en.wikipedia.org/wiki/Arepa",              
+                        image_url: SERVER_URL + "/assets/food1.jpg"},
+             'food2': { title: "Buñuelos",
+                        subtitle: "Tu mejor snack para diciembre",
+                        price: 1500, 
+                        item_url: "https://en.wikipedia.org/wiki/Bu%C3%B1uelo",     image_url: SERVER_URL + "/assets/food2.jpg"},
+             'food3': { title: "Empanada",
+                        subtitle: "Nunca son demasiadas",
+                        price: 2500,
+                        item_url: "https://en.wikipedia.org/wiki/Empanada",
+                        image_url: SERVER_URL + "/assets/food3.jpg"},
+             'drink1': { title: "Salpicón",
+                        subtitle: "Bebida de frutas tropicales",
+                        price: 2000, 
+                        item_url: "http://www.mycolombianrecipes.com/fruit-cocktail-salpicon-de-frutas",              
+                        image_url: SERVER_URL + "/assets/drink1.jpg"},
+             'drink2': { title: "Café",
+                        subtitle: "Autentico café Colombiano",
+                        price: 1000, 
+                        item_url: "https://es.wikipedia.org/wiki/Caf%C3%A9_de_Colombia",     image_url: SERVER_URL + "/assets/drink2.jpg"},
+             'drink3': { title: "Masato",
+                        subtitle: "Bebida hecha a partir de arroz",
+                        price: 1500,
+                        item_url: "https://es.wikipedia.org/wiki/Masato",
+                        image_url: SERVER_URL + "/assets/drink3.jpg"}
+            }
+
+
+var order = {}
+
 /*
  * Use your own validation token. Check that the token used in the Webhook 
  * setup is the same token used here.
@@ -305,23 +338,33 @@ function receivedMessage(event) {
 
       case 'account linking':
         sendAccountLinking(senderID);
-        break;
-            
-      case 'menu del dia':
-        sendMenuMessage(senderID);
-        break;
-            
-      case 'comidas':
-        sendFoodMessage(senderID);    
-        break;
-            
-      case 'bebidas':
-        sendDrinkMessage(senderID);    
-        break;    
+        break; 
 
-      default:
-        sendTextMessage(senderID, messageText);
+      //default:
+      //sendTextMessage(senderID, messageText);
     }
+    
+    messageText = messageText.toLowerCase()
+      
+    if (messageText.indexOf("hola") > -1){
+        sendMenuMessage(senderID);
+    }
+    else if (messageText.indexOf("buenos dias") > -1){
+        sendMenuMessage(senderID);
+    }
+    else if (messageText.indexOf("menu del dia") > -1){
+        sendMenuMessage(senderID);
+    }
+    else if (messageText.indexOf("comidas") > -1){
+        sendFoodMessage(senderID);
+    }
+    else if (messageText.indexOf("bebidas") > -1){
+        sendDrinkMessage(senderID);
+    }
+    else if (messageText.indexOf("cuenta") > -1){
+        sendBillMessage(senderID);
+    }
+      
   } else if (messageAttachments) {
     sendTextMessage(senderID, "Message with attachment received");
   }
@@ -382,12 +425,10 @@ function receivedPostback(event) {
         sendDrinkMessage(senderID);
     }
     else if(payload.startsWith("AddFood")){
-        //addFood()
-        console.log("add Food")
+        addFood(payload);
     }
     else if(payload.startsWith("AddDrink")){
-        //addFood()
-        console.log("add Food")
+        addDrink(payload);
     }
     else{
         sendTextMessage(senderID, "Postback called");      
@@ -836,15 +877,15 @@ function sendMenuMessage(recipientId) {
         type: "template",
         payload: {
           template_type: "button",
-          text: "Por favor escoja la opción de su preferencia:",
+          text: "Buenos dias, para conocer nuestros menus del dia, por favor escoja la opción de su preferencia:",
           buttons:[{
             type: "postback",
-            title: "Comidas",
+            title: "Ver comidas",
             payload: "FoodMenu"
           },
           {
             type: "postback",
-            title: "Bebidas",
+            title: "Ver bebidas",
             payload: "DrinkMenu"
           }]
         }
@@ -931,8 +972,8 @@ function sendDrinkMessage(recipientId) {
             image_url: SERVER_URL + "/assets/drink2.jpg",
             buttons: [{
               type: "postback",
-              title: "Comprar 1 tasa de café",
-              payload: "AddDrink1",
+              title: "Comprar 1 café",
+              payload: "AddDrink2",
             }]
           },  {
             title: "Masato",
@@ -941,8 +982,8 @@ function sendDrinkMessage(recipientId) {
             image_url: SERVER_URL + "/assets/drink3.jpg",
             buttons: [{
               type: "postback",
-              title: "Comprar 1 vaso de masato",
-              payload: "AddDrink1",
+              title: "Comprar 1 masato",
+              payload: "AddDrink3",
             }]
           }]
         }
@@ -981,6 +1022,96 @@ function callSendAPI(messageData) {
       console.error(response.error);
     }
   });  
+}
+
+function sendBillMessage(recipientId) {
+  // Generate a random receipt ID as the API requires a unique ID
+  var receiptId = "order" + Math.floor(Math.random()*1000);  
+  var elements = []
+  var item = {}
+  var list = []
+  var total = 0
+  
+  for(var i in order){
+      item = {}
+      item['title'] = products[i].title;
+      item['subtitle'] = products[i].subtitle;
+      item['quantity'] = order[i];
+      item['price'] = products[i].price;
+      item['currency'] = "USD"
+      item['image_url'] = products[i].image_url;
+      elements.push(item);
+      total += item['quantity']*item['price']
+  }
+  
+  var messageData = {
+    recipient: {
+      id: recipientId
+    },
+    message:{
+      attachment: {
+        type: "template",
+        payload: {
+          template_type: "receipt",
+          recipient_name: "John Garavito",
+          order_number: receiptId,
+          currency: "USD",
+          payment_method: "Visa 1234",        
+          timestamp: Math.trunc(Date.now()/1000).toString(),
+          elements: elements,
+          address: {
+            street_1: "Carrera x con calle x",
+            street_2: "",
+            city: "Bucaramanga",
+            postal_code: "680001",
+            state: "SA",
+            country: "CO"
+          },
+          summary: {
+            subtotal: total,
+            shipping_cost: 2000.00,
+            total_tax: total*0.16,
+            total_cost: total*1.16+2000.00
+          },
+          adjustments: [{
+            name: "New Customer Discount",
+            amount: -1000
+          }, {
+            name: "$1000 Off Coupon",
+            amount: -1000
+          }]
+        }
+      }
+    }
+  };
+    
+  order = {}
+  
+  callSendAPI(messageData);
+}
+
+function addFood(foodID){
+    
+    var id = foodID.substr(3).toLowerCase();
+    if(!order[id]){
+        order[id] = 1;
+    }
+    else{
+        order[id]++
+    }
+    
+    console.log("add food: "+id)
+}
+
+function addDrink(drinkID){
+    var id = drinkID.substr(3).toLowerCase();
+    if(!order[id]){
+        order[id] = 1;
+    }
+    else{
+        order[id]++
+    }
+    console.log("add drink: "+drinkID)
 }
 
 // Start server
