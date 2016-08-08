@@ -19,7 +19,7 @@ const
   request = require('request');
 
 var app = express();
-app.set('port', process.env.PORT || 80);
+app.set('port', process.env.PORT || 8000);
 app.set('view engine', 'ejs');
 app.use(bodyParser.json({ verify: verifyRequestSignature }));
 app.use(express.static('public'));
@@ -306,6 +306,18 @@ function receivedMessage(event) {
       case 'account linking':
         sendAccountLinking(senderID);
         break;
+            
+      case 'menu del dia':
+        sendMenuMessage(senderID);
+        break;
+            
+      case 'comidas':
+        sendFoodMessage(senderID);    
+        break;
+            
+      case 'bebidas':
+        sendDrinkMessage(senderID);    
+        break;    
 
       default:
         sendTextMessage(senderID, messageText);
@@ -363,7 +375,23 @@ function receivedPostback(event) {
 
   // When a postback is called, we'll send a message back to the sender to 
   // let them know it was successful
-  sendTextMessage(senderID, "Postback called");
+    if(payload == 'FoodMenu'){
+        sendFoodMessage(senderID); 
+    }
+    else if(payload == 'DrinkMenu'){
+        sendDrinkMessage(senderID);
+    }
+    else if(payload.startsWith("AddFood")){
+        //addFood()
+        console.log("add Food")
+    }
+    else if(payload.startsWith("AddDrink")){
+        //addFood()
+        console.log("add Food")
+    }
+    else{
+        sendTextMessage(senderID, "Postback called");      
+    }
 }
 
 /*
@@ -789,6 +817,133 @@ function sendAccountLinking(recipientId) {
           buttons:[{
             type: "account_link",
             url: SERVER_URL + "/authorize"
+          }]
+        }
+      }
+    }
+  };  
+
+  callSendAPI(messageData);
+}
+
+function sendMenuMessage(recipientId) {
+  var messageData = {
+    recipient: {
+      id: recipientId
+    },
+    message: {
+      attachment: {
+        type: "template",
+        payload: {
+          template_type: "button",
+          text: "Por favor escoja la opción de su preferencia:",
+          buttons:[{
+            type: "postback",
+            title: "Comidas",
+            payload: "FoodMenu"
+          },
+          {
+            type: "postback",
+            title: "Bebidas",
+            payload: "DrinkMenu"
+          }]
+        }
+      }
+    }
+  };  
+
+  callSendAPI(messageData);
+}
+
+function sendFoodMessage(recipientId) {
+  var messageData = {
+    recipient: {
+      id: recipientId
+    },
+    message: {
+      attachment: {
+        type: "template",
+        payload: {
+          template_type: "generic",
+          elements: [{
+            title: "Arepa",
+            subtitle: "Arepa santandereana con queso",
+            item_url: "https://en.wikipedia.org/wiki/Arepa",               
+            image_url: SERVER_URL + "/assets/food1.jpg",
+            buttons: [{
+              type: "postback",
+              title: "Comprar 1 arepa",
+              payload: "AddFood1",
+            }]
+          }, {
+            title: "Buñuelos",
+            subtitle: "Tu mejor snack para diciembre",
+            item_url: "https://en.wikipedia.org/wiki/Bu%C3%B1uelo",               
+            image_url: SERVER_URL + "/assets/food2.jpg",
+            buttons: [{
+              type: "postback",
+              title: "Comprar 1 buñuelo",
+              payload: "AddFood2",
+            }]
+          }, {
+            title: "Empanada",
+            subtitle: "Nunca son demasiadas",
+            item_url: "https://en.wikipedia.org/wiki/Empanada",               
+            image_url: SERVER_URL + "/assets/food3.jpg",
+            buttons: [{
+              type: "postback",
+              title: "Comprar 1 empanada",
+              payload: "AddFood3",
+            }]
+          }]
+        }
+      }
+    }
+  };  
+
+  callSendAPI(messageData);
+}
+
+function sendDrinkMessage(recipientId) {
+  var messageData = {
+    recipient: {
+      id: recipientId
+    },
+    message: {
+      attachment: {
+        type: "template",
+        payload: {
+          template_type: "generic",
+          elements: [{
+            title: "Salpicón",
+            subtitle: "Bebida de frutas tropicales",
+            item_url: "http://www.mycolombianrecipes.com/fruit-cocktail-salpicon-de-frutas",               
+            image_url: SERVER_URL + "/assets/drink1.jpg",
+            buttons: [{
+              type: "postback",
+              title: "Comprar 1 salpicón",
+              payload: "AddDrink1",
+            }]
+          },  {
+            title: "Café",
+            subtitle: "Autentico café Colombiano",
+            item_url: "https://es.wikipedia.org/wiki/Caf%C3%A9_de_Colombia",
+            image_url: SERVER_URL + "/assets/drink2.jpg",
+            buttons: [{
+              type: "postback",
+              title: "Comprar 1 tasa de café",
+              payload: "AddDrink1",
+            }]
+          },  {
+            title: "Masato",
+            subtitle: "Bebida hecha a partir de arroz",
+            item_url: "https://es.wikipedia.org/wiki/Masato",               
+            image_url: SERVER_URL + "/assets/drink3.jpg",
+            buttons: [{
+              type: "postback",
+              title: "Comprar 1 vaso de masato",
+              payload: "AddDrink1",
+            }]
           }]
         }
       }
