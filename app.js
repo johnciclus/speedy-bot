@@ -17,12 +17,18 @@ const
   express = require('express'),
   https = require('https'),  
   request = require('request');
+  
+var Parse = require('parse/node');
 
 var app = express();
 app.set('port', process.env.PORT || 8000);
 app.set('view engine', 'ejs');
 app.use(bodyParser.json({ verify: verifyRequestSignature }));
 app.use(express.static('public'));
+
+
+Parse.initialize("hSMaiK7EXqDqRVYyY2fjIp4lBweiZnjpEmhH4LpJ");
+Parse.serverURL = 'https://dev.parse.inoutdelivery.com/parse'
 
 /*
  * Be sure to setup your config values before running this code. You can 
@@ -116,23 +122,24 @@ app.get('/webhook', function(req, res) {
 app.post('/webhook', function (req, res) {
   var data = req.body;
   
-  console.log("Parse connection");
-
-  request({
-    method: 'GET',
-    url: 'https://dev.parse.inoutdelivery.com/parse/classes/_User?',
-    headers: {
-      'X-Parse-Application-Id' :'hSMaiK7EXqDqRVYyY2fjIp4lBweiZnjpEmhH4LpJ'
-    }   
-  }, function (error, response, body) {
-    if (!error && response.statusCode == 200) {
-      console.log("Successfully called Send Parse");
-      console.log(body);
-    } else {
-      console.error(response.error);
-    }
-  });    
+  var TestObject = Parse.Object.extend("TestObject");
+  var testObject = new Parse.Query(TestObject);
+  //busness ID
+  console.log(testObject)
   
+
+    
+  Parse.Cloud.run('getProducts', { businessId: 'com.inoutdelivery.licoresmedellin' }, {
+    success: function(result) {
+      result.categories.forEach(function(item){
+           
+      });
+    },
+    error: function(error) {
+      
+    }
+  });
+    
   // Make sure this is a page subscription
   if (data.object == 'page') {
     // Iterate over each entry
